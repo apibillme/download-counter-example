@@ -65,9 +65,7 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
         let b = format!("\"{}\";\n", counter);
         let c = r#"
             events.onmessage = (event) => {
-                if (event.data != "connected") {
-                    data.innerText = event.data;
-                }
+                data.innerText = event.data;
             }
         </script>
     </body>
@@ -83,7 +81,7 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let tree = Db::open("./tmp/data").unwrap();
-    let data = Broadcaster::create("connected".to_owned());
+    let data = Broadcaster::create();
 
     HttpServer::new(move || {
         App::new()

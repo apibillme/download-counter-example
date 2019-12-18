@@ -80,13 +80,20 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    
     let tree = Db::open("./tmp/data").unwrap();
+    let tree_clone = tree.clone();
+    
+    let _ = tree.compare_and_swap(b"counter", None as Option<&[u8]>, Some(b"0"));
+    
+    let _ = web::block(move || tree.flush()).await;
+
     let data = Broadcaster::create();
 
     HttpServer::new(move || {
         App::new()
             .register_data(data.clone())
-            .data(MyData{ db: tree.clone()})
+            .data(MyData{ db: tree_clone.clone()})
             .route("/", web::get().to(index))
             .route("/events", web::get().to(new_client))
             .route("/download", web::get().to(download))

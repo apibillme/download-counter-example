@@ -65,7 +65,7 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
         let b = format!("\"{}\";\n", counter);
         let c = r#"
             events.onmessage = (event) => {
-                if (event.data != "ping" && event.data != "connected") {
+                if (event.data != "connected") {
                     data.innerText = event.data;
                 }
             }

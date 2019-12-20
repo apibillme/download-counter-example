@@ -28,7 +28,7 @@ async fn download(data: web::Data<MyData>, broad: web::Data<std::sync::Mutex<Bro
 
     let _ = web::block(move || data.db.flush()).await;
 
-    broadcast(new_counter_string.to_owned(), broad).await;
+    broadcast("counter".to_owned(), new_counter_string.to_owned(), broad).await;
 
     let f = web::block(|| std::fs::File::create("test.pdf")).await.unwrap();
     
@@ -64,9 +64,9 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
             data.innerText = "#;
         let b = format!("\"{}\";\n", counter);
         let c = r#"
-            events.onmessage = (event) => {
+            events.addEventListener("counter", (event) => {
                 data.innerText = event.data;
-            }
+            });
         </script>
     </body>
     </html>"#;

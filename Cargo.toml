@@ -9,8 +9,8 @@ repository = "https://github.com/apibillme/download-counter-example"
 
 [dependencies]
 actix-rt = "1.0.0"
-actix-web = "2.0.0-alpha.6"
-actix-files = "0.2.0-alpha.3"
+actix-web = "2.0.0-rc"
+actix-files = "0.2.0"
 futures = "0.3.1"
 tokio = "0.2.4"
 sse-actix-web="0.5.0"

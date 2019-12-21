@@ -55,7 +55,8 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
         </style>
     </head>
     <body>
-        <div id="root"></div>
+        <div>Files Downloaded: <span id="root"></span></div>
+        <div><a href="/download" target="_blank">Download</a></div>
         <script>
             let root = document.getElementById("root");
             let events = new EventSource("/events");
@@ -92,7 +93,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .register_data(data.clone())
+            .app_data(data.clone())
             .data(MyData{ db: tree_clone.clone()})
             .route("/", web::get().to(index))
             .route("/events", web::get().to(new_client))

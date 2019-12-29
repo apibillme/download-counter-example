@@ -1,11 +1,28 @@
+use std::sync::Mutex;
 use std::io::{self};
 use actix_web::{web, HttpServer, HttpResponse, App, Responder};
-use sse_actix_web::{new_client, Broadcaster, broadcast};
-use sled::Db;
+use sse_actix_web::{Broadcaster, broadcast};
+use sled;
 use actix_files::NamedFile;
 
 pub struct MyData {
     db: sled::Db
+}
+
+async fn new_client(data: web::Data<MyData>, broadcaster: web::Data<Mutex<Broadcaster>>) -> impl Responder {
+
+    let counter_buffer = data.db.get(b"counter").unwrap().unwrap();
+    
+    let counter = std::str::from_utf8(&counter_buffer).unwrap();
+
+    let rx = broadcaster.lock().unwrap().new_client(&"counter", counter);
+
+    HttpResponse::Ok()
+        .header("content-type", "text/event-stream")
+        .header("Access-Control-Allow-Origin",  "*")
+        .header("Access-Control-Allow-Credentials", "true")
+        .no_chunking()
+        .streaming(rx)
 }
 
 async fn download(data: web::Data<MyData>, broad: web::Data<std::sync::Mutex<Broadcaster>>) -> io::Result<NamedFile> {
@@ -35,13 +52,9 @@ async fn download(data: web::Data<MyData>, broad: web::Data<std::sync::Mutex<Bro
     NamedFile::from_file(f, "test.pdf")
 }
 
-async fn index(data: web::Data<MyData>) -> impl Responder {
+async fn index() -> impl Responder {
 
-    let counter_buffer = data.db.get(b"counter").unwrap().unwrap();
-    
-    let counter = std::str::from_utf8(&counter_buffer).unwrap();
-
-    let a = r#"<html lang="en">
+    let content = r#"<html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,17 +75,12 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
             let events = new EventSource("/events");
             let data = document.createElement("p");
             root.appendChild(data);
-            data.innerText = "#;
-        let b = format!("\"{}\";\n", counter);
-        let c = r#"
             events.addEventListener("counter", (event) => {
                 data.innerText = event.data;
             });
         </script>
     </body>
     </html>"#;
-
-    let content = format!("{}{}{}", a, b, c);
 
     HttpResponse::Ok()
         .header("content-type", "text/html")
@@ -82,7 +90,7 @@ async fn index(data: web::Data<MyData>) -> impl Responder {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     
-    let tree = Db::open("./tmp/data").unwrap();
+    let tree = sled::open("./tmp/data").unwrap();
     let tree_clone = tree.clone();
     
     let _ = tree.compare_and_swap(b"counter", None as Option<&[u8]>, Some(b"0"));
@@ -100,6 +108,6 @@ async fn main() -> std::io::Result<()> {
             .route("/download", web::get().to(download))
     })
     .bind("0.0.0.0:3000")?
-    .start()
+    .run()
     .await
 }

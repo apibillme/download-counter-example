@@ -1,9 +1,10 @@
 use std::sync::Mutex;
 use std::io::{self};
-use actix_web::{web, HttpServer, HttpResponse, App, Responder};
+use actix_web::{http::header, web, HttpServer, HttpResponse, App, Responder};
 use sse_actix_web::{Broadcaster, broadcast};
 use sled;
 use actix_files::NamedFile;
+use actix_cors::Cors;
 
 pub struct MyData {
     db: sled::Db
@@ -19,8 +20,6 @@ async fn new_client(data: web::Data<MyData>, broadcaster: web::Data<Mutex<Broadc
 
     HttpResponse::Ok()
         .header("content-type", "text/event-stream")
-        .header("Access-Control-Allow-Origin",  "*")
-        .header("Access-Control-Allow-Credentials", "true")
         .no_chunking()
         .streaming(rx)
 }
@@ -101,6 +100,14 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::new()
+                    .send_wildcard()
+                    .allowed_methods(vec!["GET", "POST"])
+                    .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT, header::CONTENT_TYPE])
+                    .max_age(3600)
+                    .finish(),
+            )
             .app_data(data.clone())
             .data(MyData{ db: tree_clone.clone()})
             .route("/", web::get().to(index))

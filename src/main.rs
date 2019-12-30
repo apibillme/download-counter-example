@@ -5,6 +5,12 @@ use sse_actix_web::{Broadcaster, broadcast};
 use sled;
 use actix_files::NamedFile;
 use actix_cors::Cors;
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+struct Config {
+  port: i32
+}
 
 pub struct MyData {
     db: sled::Db
@@ -88,6 +94,9 @@ async fn index() -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+
+    let config = envy::from_env::<Config>().unwrap();
+    let ip = format!("0.0.0.0:{}", config.port);
     
     let tree = sled::open("./tmp/data").unwrap();
     let tree_clone = tree.clone();
@@ -114,7 +123,7 @@ async fn main() -> std::io::Result<()> {
             .route("/events", web::get().to(new_client))
             .route("/download", web::get().to(download))
     })
-    .bind("0.0.0.0:3000")?
+    .bind(ip)?
     .run()
     .await
 }

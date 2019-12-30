@@ -2,8 +2,6 @@
 
 ## Use
 
-- compile and run
+- ``` make ```
 
-- open [localhost:3000](http://localhost:3000) to view counter
-
-- open [localhost:3000/download](http://localhost:3000/download) to download file to increment counter
+- open [localhost:3000](http://localhost:3000)
